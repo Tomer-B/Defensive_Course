@@ -25,19 +25,15 @@ bool User::canSendMessage(const unsigned int sendId) const {
 }
 
 bool User::alreadyFriend(const unsigned int friendId) const {
-	cout << "User " << id << " Checking if " << friendId << " is a friend" << endl;
 	for (auto existingId : friends) {
-		cout << "Comparing " << friendId << " to " << existingId << endl;
 		if (existingId == friendId) {
-			cout << "They are!" << endl;
 			return true;
 		}
 	}
-	cout << "They aren't!" << endl;
 	return false;
 }
 
-void User::addFriend(User* user) { 
+void User::addFriend(User* user) {
 	if (!alreadyFriend(user->id)) {
 		cout << "User " << id << " adding as friend " << user->id << endl;
 		friends.push_back(user->id);

@@ -46,7 +46,6 @@ int test2() {
     try {
         u6->addFriend(u1);
         u6->addFriend(u1);
-        cout << "aaa" << endl;
     }
     catch (alreadyFriends) {
         cout << "cannot add friend twice!" << endl;

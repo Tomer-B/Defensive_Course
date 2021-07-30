@@ -27,13 +27,7 @@ void USocial::removeUser(User* user) {
 }
 
 User* USocial::getUserById(const unsigned long userId) const {
-	cout << "Trying to find user with id " << userId << endl;
-	cout << "Currently has: " << endl;
-	for (auto item : users) {
-		cout << item.second->id << endl;
-	}
 	if (users.find(userId) != users.end()) {
-		cout << "Found user with id " << users.at(userId)->id << endl;
 		return users.at(userId);
 	}
 	throw userDoesntExist("User doesn't exist!\n");
