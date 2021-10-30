@@ -45,12 +45,12 @@ int Client::registerClient() {
     RegisterPayload* r = NULL;
     ProtocolMessage* p = NULL;
     vector<char> PayLoadResponse = { 0 };
-    comm.Connect();
 
     if (_access(CLIENTINFO, 0) != -1) {
         cout << "File " << CLIENTINFO << " already exists!" << endl;
         VERIFY(-1);
     }
+    comm.Connect();
 
     cout << "Enter Your name" << endl;
     cin >> ClientName;
@@ -63,7 +63,7 @@ int Client::registerClient() {
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, REGISTER_REQUEST, sizeof(RegisterPayload), (Payload*)r);
     
     PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE, REGISTRATION_SUCCESS_RESPONSE);
-    memcpy(ClientID, &PayLoadResponse, UUID_SIZE);
+    memcpy(ClientID, &PayLoadResponse[0], UUID_SIZE);
 
     cout << "Writing info to file" << endl;
     WriteInfoToFile();
@@ -75,7 +75,9 @@ cleanup:
     if (p) {
         delete p;
     }
-    comm.Close();
+    if (comm.IsConnected()) {
+        comm.Close();
+    }
     return result;
 }
 
@@ -86,9 +88,11 @@ int Client::getClientList() {
     RemoteClient* c;
     cout << "Client Names:" << endl;
     for (int i = 0; i < (PayLoadResponse.size() / (UUID_SIZE + MAX_NAME_SIZE)) ; i++) {
-        c = (RemoteClient*)&PayLoadResponse[i * (UUID_SIZE + MAX_NAME_SIZE )];
-        cout << c->ClientName << endl;
-    }
+        c = (RemoteClient*)&PayLoadResponse[i * (UUID_SIZE + MAX_NAME_SIZE)];
+        if (c->ClientName[0]) {
+            cout << c->ClientName << endl;
+        }
+    }     
 
 cleanup:
     delete p;
@@ -100,7 +104,7 @@ string Client::GetRemotePublicKey(char RemoteClientUUID[16]) {
     RequestClientPublicKey* r = new RequestClientPublicKey(RemoteClientUUID);
     ProtocolMessage* p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, sizeof(RegisterPayload), (Payload*)r);
     vector<char> PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
-
+    return string(PayLoadResponse.begin() + UUID_SIZE, PayLoadResponse.end());
 
 cleanup:
     delete r;
@@ -133,6 +137,19 @@ int Client::start() {
             break;
         case 20:
             getClientList();
+            break;
+        case 30:
+            //GetRemotePublicKey();
+            break;
+        case 40:
+            break;
+        case 50:
+            break;
+        case 51:
+            break;
+        case 52:
+            break;
+        case 53:
             break;
         case 0:
             return 0;
