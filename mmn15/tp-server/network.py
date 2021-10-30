@@ -75,16 +75,16 @@ def handle_list_users(request):
 
 def handle_get_pubkey(request):
     logger.info(f'Handling get pubkey request')
-    key = request._server.get_user_pubkey(request.payload)
-    return PubkeyResponse(request._server.version, request.payload, key)
+    key = request._server.get_user_pubkey(request._payload)
+    return PubkeyResponse(request._server.version, request._payload, key)
 
 
 def handle_send_message(request):
     logger.info(f'Handling send message request')
-    dest_client_id = request.payload[0:16]
-    message_type = request.payload[16:17]
-    content_size = request.payload[17:21]
-    content = request.payload[21:request._payload_len]
+    dest_client_id = request._payload[0:16]
+    message_type = request._payload[16:17]
+    content_size = request._payload[17:21]
+    content = request._payload[21:request._payload_len]
     message_id = request._server.send_message(request._client_id, dest_client_id, message_type, content_size, content)
     return SendMessageResponse(request._server.version, dest_client_id, message_id)
 
@@ -156,5 +156,5 @@ class ServerRequest(object):
         try:
             return self._REQUEST_TYPES[self._request_code]['handler'](self)
         except Exception as e:
-            logger.error(f'Couldn\'t handle request:\n{e}')
+            logger.error(f'Couldn\'t handle request:\n\t{e}')
             return GeneralErrorResponse(self._server.version)

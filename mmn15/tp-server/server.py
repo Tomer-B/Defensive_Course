@@ -49,7 +49,7 @@ class MessageUServer(object):
         try:
             logger.info('Starting server socket')
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind((socket.gethostname(), self.port))
+            s.bind(('0.0.0.0', self.port))
             s.listen(MAX_CLIENTS)
         except Exception as e:
             logger.error('Couldn\'t open and bind server socket')
@@ -108,6 +108,8 @@ class MessageUServer(object):
         return users_to_send.values()
 
     def get_user_pubkey(self, client_id):
+        if client_id not in self._users:
+            raise Exception(f'Client {client_id} is not registerd to server')
         return self._users[client_id].public_key
 
     def send_message(self, src_client_id, dest_client_id, message_type, content_size, content):
@@ -116,7 +118,7 @@ class MessageUServer(object):
             self._messages[dest_client_id] = []
         self._messages[dest_client_id].append(new_message)
         logger.info(f'Message sent to {dest_client_id} from {src_client_id}')
-        raise NotImplementedError()
+        return new_message.message_id
 
     def get_unread_messages(self, client_id):
         unread_messages = []

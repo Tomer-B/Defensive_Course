@@ -18,7 +18,7 @@ class Message(object):
         return cls(message_id, dest_client_id, src_client_id, message_type, content)
 
     def serialize(self):
-        return self.from_client+self.message_id+self.message_type+len(self.content)+self.content
+        return self.from_client+self.message_id+self.message_type+len(self.content).to_bytes(4, BYTE_ORDER)+self.content
 
 
 class User(object):
