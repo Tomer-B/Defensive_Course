@@ -49,7 +49,7 @@ class MessageUServer(object):
         try:
             logger.info('Starting server socket')
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind((socket.gethostname(), self.port))
+            s.bind(('0.0.0.0', self.port))
             s.listen(MAX_CLIENTS)
         except Exception as e:
             logger.error('Couldn\'t open and bind server socket')
