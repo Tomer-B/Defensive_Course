@@ -21,8 +21,14 @@ int ClientComms::SendMessage(vector<char> bytes) {
 
 vector<char> ClientComms::ReceiveMessage(size_t MessageSize) {
 	vector<char> buffer(MessageSize);
-	size_t read_bytes = read(sock, boost::asio::buffer(buffer));
-	std::cout << "Got " << read_bytes << " Bytes! " << std::endl;
+	size_t read_bytes = 0;
+	try {
+		read_bytes = read(sock, boost::asio::buffer(buffer));
+	}
+	catch (const std::exception& error) {
+		std::cerr << error.what() << std::endl;
+	}
+	std::cout << "Got " << read_bytes << " Bytes! " << " And buffer is of size " << buffer.size() << std::endl;
 	return buffer;
 }
 

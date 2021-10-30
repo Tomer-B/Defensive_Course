@@ -3,8 +3,6 @@
 #include "Comms.h"
 #include "RSAWrapper.h"
 
-#define SERVER_RESPONSE_HEADER_SIZE (7)
-
 using namespace std;
 
 class Client {
@@ -21,6 +19,8 @@ private:
 	int getClientList();
 	int printPrompt();
 	int WriteInfoToFile();
+	string GetRemotePublicKey(char RemoteClientUUID[16]);
+	vector<char> SendMessageAndExpectCode(ProtocolMessage* p, size_t ExpectedPayloadSize, unsigned short ExpectedCode);
 public:
 	Client(const string& ip, const string& port);
 	int start();
