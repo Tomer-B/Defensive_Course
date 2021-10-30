@@ -2,9 +2,6 @@
 #include "Protocol.h"
 #include <boost/asio.hpp>
 
-#define LOCALHOST ("127.0.0.1")
-#define PORT ("22222")
-
 class ClientComms {
 	boost::asio::io_context context;
 	boost::asio::ip::tcp::socket sock;

@@ -10,6 +10,7 @@ using namespace std;
 class Client {
 private:
 	char ClientID[16];
+	char ClientName[256];
 	ClientComms comm;
 	RSAPrivateWrapper rsa_private;
 	RSAPublicWrapper rsa_public;
@@ -19,6 +20,7 @@ private:
 	int registerClient();
 	int getClientList();
 	int printPrompt();
+	int WriteInfoToFile();
 public:
 	Client(const string& ip, const string& port);
 	int start();

@@ -4,6 +4,9 @@
 #include <vector>
 
 #define MAX_PAYLOAD_LENGTH (1024)
+#define UUID_SIZE (16)
+#define PUBLIC_KEY_SIZE (160)
+#define MAX_NAME_SIZE (256)
 
 using namespace std;
 
@@ -22,13 +25,13 @@ public:
 };
 
 class ProtocolMessage {
-	char ClientID[16];
+	char ClientID[UUID_SIZE];
 	unsigned char Version;
 	unsigned short Code;
 	size_t PayloadSize;
 	Payload *payload;
 public:
-	ProtocolMessage(char id[16], unsigned char Version, unsigned short Code, unsigned int PayloadSize, Payload *payload) :
+	ProtocolMessage(char id[UUID_SIZE], unsigned char Version, unsigned short Code, unsigned int PayloadSize, Payload *payload) :
 		Version(Version), Code(Code), PayloadSize(PayloadSize), payload(payload) {
 		memset(ClientID, 0, sizeof(ClientID));
 		memcpy(ClientID, id, sizeof(id));
@@ -37,28 +40,28 @@ public:
 };
 
 class RegisterPayload : Payload {
-	char Name[256]; 
-	char PublicKey[160];
+	char Name[MAX_NAME_SIZE];
+	char PublicKey[PUBLIC_KEY_SIZE];
 public:
-	RegisterPayload(char Name[256], string PublicKey);
+	RegisterPayload(char Name[MAX_NAME_SIZE], string PublicKey);
 };
 
 class RequestClientPublicKey : Payload {
-	char ClientID[16];
+	char ClientID[UUID_SIZE];
 public:
-	RequestClientPublicKey(char ClientID[16]) {
+	RequestClientPublicKey(char ClientID[UUID_SIZE]) {
 		memset(ClientID, 0, sizeof(ClientID));
 		memcpy(ClientID, ClientID, sizeof(ClientID));
 	}
 };
 
 class RequestSendMessageToClient : Payload {
-	char ClientID[16];
+	char ClientID[UUID_SIZE];
 	char MessageType;
 	size_t Size;
 	char* Content;
 public:
-	RequestSendMessageToClient(char ClientID[16], char MessageType, size_t Size, char* Content) : MessageType(MessageType), Size(Size), Content(Content) {
+	RequestSendMessageToClient(char ClientID[UUID_SIZE], char MessageType, size_t Size, char* Content) : MessageType(MessageType), Size(Size), Content(Content) {
 		memset(ClientID, 0, sizeof(ClientID));
 		memcpy(ClientID, ClientID, sizeof(ClientID));
 	};
