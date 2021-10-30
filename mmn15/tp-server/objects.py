@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import base64
 
 BYTE_ORDER = 'little'
 
@@ -35,7 +36,7 @@ class User(object):
         return cls(user_id, name, public_key, last_seen)
 
     def update_last_seen(self):
-        self.last_seen = time.time()
+        self.last_seen = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
     def serialize(self):
         assert type(self.user_id) is bytes and len(self.user_id) == 16
