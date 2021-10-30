@@ -2,12 +2,13 @@
 #include "except.h"
 #include <iostream>
 #include <vector>
+#pragma pack(push, 1)
 
 #define CLIENT_VERSION (1)
 
 #define UUID_SIZE (16)
 #define PUBLIC_KEY_SIZE (160)
-#define MAX_NAME_SIZE (256)
+#define MAX_NAME_SIZE (255)
 #define MAX_PAYLOAD_SIZE (16384)
 
 #define REGISTER_REQUEST (1000)
@@ -30,14 +31,12 @@
 
 using namespace std;
 
-#pragma pack(push, 1)
 class ServerResponseHeader {
 	unsigned char Version;
 	unsigned short Code;
 	size_t PayloadSize;
 	friend class Client;
 };
-#pragma pack(pop)
 
 class Payload {
 public:
@@ -69,9 +68,9 @@ public:
 class RequestClientPublicKey : Payload {
 	char ClientID[UUID_SIZE];
 public:
-	RequestClientPublicKey(char ClientID[UUID_SIZE]) {
+	RequestClientPublicKey(char id[UUID_SIZE]) {
 		memset(ClientID, 0, sizeof(ClientID));
-		memcpy(ClientID, ClientID, sizeof(ClientID));
+		memcpy(ClientID, id, sizeof(ClientID));
 	}
 };
 
@@ -87,8 +86,10 @@ public:
 	};
 };
 
-class RemoteClient {
+class RemoteClientResponse {
 	char ClientID[UUID_SIZE];
 	char ClientName[MAX_NAME_SIZE];
 	friend class Client;
 };
+
+#pragma pack(pop)

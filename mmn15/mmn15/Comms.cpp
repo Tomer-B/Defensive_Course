@@ -8,10 +8,11 @@
 using namespace boost::asio::ip;
 using boost::asio::ip::tcp;
 
-ClientComms::ClientComms(const string &ip, const string &port) : endp(address::from_string(ip), stoi(port)), context(), sock(context) {}
+ClientComms::ClientComms(const string& ip, const string& port) : endp(address::from_string(ip), stoi(port)), context(), sock(context), is_connected(false) {}
 
 int ClientComms::Connect() {
 	sock.connect(endp);
+	is_connected = true;
 	return 0;
 }
 
@@ -34,5 +35,10 @@ vector<char> ClientComms::ReceiveMessage(size_t MessageSize) {
 
 int ClientComms::Close() {
 	sock.close();
+	is_connected = false;
 	return 0;
+}
+
+bool ClientComms::IsConnected() {
+	return is_connected;
 }

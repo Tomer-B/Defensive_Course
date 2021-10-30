@@ -4,7 +4,7 @@ using namespace std;
 
 
 vector<char> Payload::pack(size_t size) {
-	vector<char> v = { 0 };
+	vector<char> v;
 	for (char* c = (char*)this; c < (char*)this + size;  c++) {
 		v.push_back(*c);
 	}
@@ -19,7 +19,7 @@ vector<char> ProtocolMessage::pack() {
 	}
 	*/
 	char* data = (char*)&ClientID;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < sizeof(ClientID); i++) {
 		v.push_back(data[i]);
 	}
 	v.push_back(Version);
