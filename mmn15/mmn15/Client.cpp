@@ -1,7 +1,6 @@
 #include "Client.h"
 #include "Comms.h"
 #include "Protocol.h"
-#include "Crypto.h"
 #include "Base64Wrapper.h"
 
 #include  <io.h>
@@ -59,6 +58,8 @@ int Client::registerClient() {
         VERIFY(-1);
     }
 
+    cout << "My Public Key: " << rsa_public.getPublicKey() << endl; // remove
+
     r = new RegisterPayload(ClientName, rsa_public.getPublicKey());
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, REGISTER_REQUEST, sizeof(RegisterPayload), (Payload*)r);
     
@@ -85,12 +86,14 @@ int Client::getClientList() {
     comm.Connect();
     ProtocolMessage* p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, 0, NULL);
     vector<char> PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, CLIENT_LIST_RESPONSE);
-    RemoteClient* c;
+    RemoteClientResponse* c;
+    
     cout << "Client Names:" << endl;
     for (int i = 0; i < (PayLoadResponse.size() / (UUID_SIZE + MAX_NAME_SIZE)) ; i++) {
-        c = (RemoteClient*)&PayLoadResponse[i * (UUID_SIZE + MAX_NAME_SIZE)];
+        c = (RemoteClientResponse*)&PayLoadResponse[i * (UUID_SIZE + MAX_NAME_SIZE)];
         if (c->ClientName[0]) {
             cout << c->ClientName << endl;
+            ClientsList.push_back(User(c->ClientID, c->ClientName));
         }
     }     
 
@@ -100,16 +103,42 @@ cleanup:
     return 0;
 }
 
-string Client::GetRemotePublicKey(char RemoteClientUUID[16]) {
-    RequestClientPublicKey* r = new RequestClientPublicKey(RemoteClientUUID);
-    ProtocolMessage* p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, sizeof(RegisterPayload), (Payload*)r);
-    vector<char> PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
-    return string(PayLoadResponse.begin() + UUID_SIZE, PayLoadResponse.end());
+int Client::GetRemotePublicKey() {
+    int result = 0;
+    char RequestedClientName[MAX_NAME_SIZE];
+    RequestClientPublicKey* r = NULL;
+    ProtocolMessage* p = NULL;
+    User* user = NULL;
+    vector<char> PayLoadResponse;
+
+    if (!ClientsList.size()) {
+        cout << "Unknwon Client, request ClientList (20)" << endl;
+        VERIFY(-1);
+    }
+    
+    cout << "Input Requested Username: " << endl;
+    cin >> RequestedClientName;
+    user = GetUserByName(RequestedClientName);
+    VERIFY(user == NULL);
+
+    comm.Connect();
+    r = new RequestClientPublicKey(user->ClientID);
+    p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_PUBLIC_KEY_REQUEST, sizeof(RequestClientPublicKey), (Payload*)r);
+    PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
+    user->SetPublicKey(PayLoadResponse);
+    cout << "Requested Public Key: " << user->PublicKey << endl;
 
 cleanup:
-    delete r;
-    delete p;
-    return 0;
+    if (r) {
+        delete r;
+    }
+    if (p) {
+        delete p;
+    }
+    if (comm.IsConnected()) {
+        comm.Close();
+    }
+    return result;
 }
 
 int Client::WriteInfoToFile() {
@@ -126,6 +155,16 @@ int Client::WriteInfoToFile() {
     return 0;
 }
 
+User* Client::GetUserByName(char RequestedClientName[MAX_NAME_SIZE]) {
+    for (User &user : ClientsList) {
+        if (strncmp(user.ClientName, RequestedClientName, MAX_NAME_SIZE) == 0) {
+            return &user;
+        }
+    }
+    cout << "Could not find such User. Try Requesting the client list (20)" << endl;
+    return NULL;
+}
+
 int Client::start() {
     int option;
     while (1) {
@@ -139,7 +178,7 @@ int Client::start() {
             getClientList();
             break;
         case 30:
-            //GetRemotePublicKey();
+            GetRemotePublicKey();
             break;
         case 40:
             break;

@@ -68,9 +68,9 @@ public:
 class RequestClientPublicKey : Payload {
 	char ClientID[UUID_SIZE];
 public:
-	RequestClientPublicKey(char ClientID[UUID_SIZE]) {
+	RequestClientPublicKey(char id[UUID_SIZE]) {
 		memset(ClientID, 0, sizeof(ClientID));
-		memcpy(ClientID, ClientID, sizeof(ClientID));
+		memcpy(ClientID, id, sizeof(ClientID));
 	}
 };
 
@@ -86,7 +86,7 @@ public:
 	};
 };
 
-class RemoteClient {
+class RemoteClientResponse {
 	char ClientID[UUID_SIZE];
 	char ClientName[MAX_NAME_SIZE];
 	friend class Client;
