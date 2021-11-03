@@ -4,11 +4,13 @@ import select
 import logging
 from network import UserHandler
 from objects import User, Message
+from sql import SQLHandler
 
 PORT_INFO_FILE = 'port.info'
 VERSION_INFO_FILE = 'version.info'
 MAX_CLIENTS = 10
 BYTE_ORDER = 'little'
+DB_NAME = 'message_u_sqlite.db'
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +18,11 @@ class MessageUServer(object):
     def __init__(self):
         self.port = self._get_port_info()
         self.version = self._get_version_info()
-        self._users = {}
-        self._messages = {}
+        self._sql_handler = SQLHandler(DB_NAME)
         self._socket = None
         self._client_handlers = []
+        self._users = self._sql_handler.load_users_from_db()
+        self._messages = self._sql_handler.load_messages_from_db()
 
     def _get_port_info(self):
         try:
@@ -93,12 +96,27 @@ class MessageUServer(object):
                 return user
         return None
 
+    def _update_user(self, user):
+        if user.user_id not in self._users:
+            self._users[user.user_id] = user
+        self._sql_handler.update_user_to_db(user)
+
+    def _update_messages(self, message):
+        if message.to_client not in self._messages:
+            self._messages[message.to_client] = []
+        self._messages[message.to_client].append(new_message)
+        self._sql_handler.add_message_to_db(new_message)
+
+    def _remove_user_messages(self, client_id):
+        self._messages[client_id] = []
+        self._sql_handler.remove_client_messages(client_id)
+
     def register_user(self, name, pubkey):
         if self._get_user_from_name(name) is not None:
             logger.error(f'User exists')
             raise Exception('User already registerd')
         new_user = User.create_new_user(name, pubkey)
-        self._users[new_user.user_id] = new_user
+        self._update_user(new_user)
         logger.info(f'Registerd new user {new_user.user_id}')
         return new_user.user_id
 
@@ -114,9 +132,7 @@ class MessageUServer(object):
 
     def send_message(self, src_client_id, dest_client_id, message_type, content_size, content):
         new_message = Message.gen_new_message(src_client_id, dest_client_id, message_type, content_size, content)
-        if dest_client_id not in self._messages:
-            self._messages[dest_client_id] = []
-        self._messages[dest_client_id].append(new_message)
+        self._update_messages(new_message)
         logger.info(f'Message sent to {dest_client_id} from {src_client_id}')
         return new_message.message_id
 
@@ -124,10 +140,11 @@ class MessageUServer(object):
         unread_messages = []
         if client_id in self._messages:
             unread_messages = self._messages[client_id]
-        self._messages[client_id] = []
+        self._remove_user_messages()
         logger.info(f'Unread messages to {client_id} removed')
         return unread_messages
 
     def update_last_seen(self, client_id):
         if client_id in self._users:
             self._users[client_id].update_last_seen()
+            self._update_user(self._users[client_id])
