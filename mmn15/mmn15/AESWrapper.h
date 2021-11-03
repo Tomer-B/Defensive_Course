@@ -9,7 +9,6 @@ public:
 	static const unsigned int DEFAULT_KEYLENGTH = 16;
 private:
 	unsigned char _key[DEFAULT_KEYLENGTH];
-	AESWrapper(const AESWrapper& aes);
 public:
 	static unsigned char* GenerateKey(unsigned char* buffer, unsigned int length);
 
