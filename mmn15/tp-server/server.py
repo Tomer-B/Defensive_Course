@@ -117,6 +117,7 @@ class MessageUServer(object):
             raise Exception('User already registerd')
         new_user = User.create_new_user(name, pubkey)
         self._update_user(new_user)
+        self._users[new_user.user_id] = new_user
         logger.info(f'Registerd new user {new_user.user_id}')
         return new_user.user_id
 
