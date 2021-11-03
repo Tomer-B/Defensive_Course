@@ -116,11 +116,8 @@ class MessageUServer(object):
             logger.error(f'User exists')
             raise Exception('User already registerd')
         new_user = User.create_new_user(name, pubkey)
-<<<<<<< Updated upstream
         self._update_user(new_user)
-=======
         print("New users pubkey: {}".format(pubkey))
->>>>>>> Stashed changes
         self._users[new_user.user_id] = new_user
         logger.info(f'Registerd new user {new_user.user_id}')
         return new_user.user_id
