@@ -22,7 +22,9 @@ class MessageUServer(object):
         self._socket = None
         self._client_handlers = []
         self._users = self._sql_handler.load_users_from_db()
+        logger.info(f'Loaded {len(self._users)} users from db')
         self._messages = self._sql_handler.load_messages_from_db()
+        logger.info(f'Loaded {len(self._messages)} messages from db')
 
     def _get_port_info(self):
         try:

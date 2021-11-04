@@ -1,6 +1,7 @@
 import sqlite3
 from objects import User, Message
 
+logger = logging.getLogger(__name__)
 
 class SQLHandler(object):
     SELECT_USERS_TABLE = "SELECT name FROM sqlite_master WHERE type='table' AND name='users';"
@@ -35,7 +36,8 @@ class SQLHandler(object):
                 cursorObj.execute(self.CREATE_MESSAGE_TABLE)
                 con.commit()
         except Exception as e:
-            print(f'Couldn\'t initialize db')
+            logger.error(f'Couldn\'t initialize db')
+            logger.error(e)
         finally:
             con.close()
 
@@ -44,13 +46,15 @@ class SQLHandler(object):
             con = sqlite3.connect(self.db_path)
             return con
         except Exception as e:
-            print(f'Couldn\'t connect to db: {self.db_path}')
+            logger.error(f'Couldn\'t connect to db: {self.db_path}')
+            logger.error(e)
             raise e
 
     def load_users_from_db(self):
         con = self._open_db()
         try:
             users_dict = {}
+            cursorObj = con.cursor()
             cursorObj.execute(self.SELECT_ALL_USERS_FROM_DB)
             users = cursorObj.fetchall()
             for user in users:
@@ -58,7 +62,8 @@ class SQLHandler(object):
                 users_dict[user_obj.user_id] = user_obj
             return users_dict
         except Exception as e:
-            print(f'Couldn\'t load users from db')
+            logger.error(f'Couldn\'t load users from db')
+            logger.error(e)
         finally:
             con.close()
         
@@ -66,6 +71,7 @@ class SQLHandler(object):
         con = self._open_db()
         try:
             messages_dict = {}
+            cursorObj = con.cursor()
             cursorObj.execute(self.SELECT_ALL_MESSAGES_FROM_DB)
             messages = cursorObj.fetchall()
             for message in messages:
@@ -75,7 +81,8 @@ class SQLHandler(object):
                 messages_dict[message_obj.to_client].append(message_obj)
             return messages_dict
         except Exception as e:
-            print(f'Couldn\'t load messages from db')
+            logger.error(f'Couldn\'t load messages from db')
+            logger.error(e)
         finally:
             con.close()
 
@@ -93,7 +100,8 @@ class SQLHandler(object):
                 cursorObj.execute(self.UPDATE_USER_LAST_SEEN, user_data)
                 con.commit()
         except Exception as e:
-            print(f'Couldn\'t initialize user in db')
+            logger.error(f'Couldn\'t initialize user in db')
+            logger.error(e)
         finally:
             con.close()
 
@@ -105,7 +113,8 @@ class SQLHandler(object):
             cursorObj.execute(self.INSERT_MESSAGE, message_data)
             con.commit()
         except Exception as e:
-            print(f'Couldn\'t initialize message in db')
+            logger.error(f'Couldn\'t initialize message in db')
+            logger.error(e)
         finally:
             con.close()
 
@@ -116,6 +125,7 @@ class SQLHandler(object):
             cursorObj.execute(self.DELETE_MESSAGE_FROM_DB, (client_id,))
             con.commit()
         except Exception as e:
-            print(f'Couldn\'t delete messages from db')
+            logger.error(f'Couldn\'t delete messages from db')
+            logger.error(e)
         finally:
             con.close()
