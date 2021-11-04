@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <iomanip>
 
 using namespace std;
 
@@ -18,21 +19,8 @@ string readServerData() {
     throw ServerInfoReadError();
 }
 
-int getMyInfo(string& name, string& ClientID, string& PrivateKey) {
-    ifstream clientInfo(CLIENTINFO);
-    clientInfo.open(CLIENTINFO);
-    string line;
-
-    if (clientInfo.is_open()) {
-        getline(clientInfo, name);
-        getline(clientInfo, ClientID);
-        getline(clientInfo, PrivateKey); // base-64 encoded
-    }
-    return 0;
-}
-
 string ascii_to_hex(const string& Ascii) {
-    std::string result;
+    string result;
     for (auto it = Ascii.begin(); it != Ascii.end(); advance(it, 2)) {
         string Current;
         Current += *it;
@@ -40,4 +28,12 @@ string ascii_to_hex(const string& Ascii) {
         result += static_cast<char>(stoi(Current, nullptr, UUID_SIZE));
     }
     return result;
+}
+
+string hex_to_ascii(const string& Hex, size_t len) {
+    stringstream stream;
+    for (int i = 0; i < len; i++) {
+        stream << setw(2) << setfill('0') << hex << ((int)Hex[i] & 0xff);
+    }
+    return stream.str();
 }

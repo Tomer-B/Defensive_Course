@@ -43,20 +43,17 @@ int Client::ReadInfoFile() {
         lines.push_back(line);
     }
     InfoFile.close();
+
     if ((lines.size() < 3) || (lines[0].length() > MAX_NAME_SIZE)) {
         throw InvalidMeInfoFileError();
     }
-    cout << "good1" << endl;
     strncpy_s(ClientName, (char*)&lines[0], MAX_NAME_SIZE);
-    cout << "good2" << endl;
+    
     lines[1] = ascii_to_hex(lines[1]);
-    cout << "good3" << endl;
     if (lines[1].length() != UUID_SIZE) {
         throw InvalidMeInfoFileError();
     }
-    cout << "good4" << endl;
     memcpy(ClientID, (char*)&lines[1][0], UUID_SIZE);
-    cout << "good5" << endl;
 
     string EncodedPrivateKey;
     for (auto line = lines.begin() + 2; line < lines.end(); line++) {
@@ -103,7 +100,7 @@ int Client::registerClient() {
 
     if (_access(CLIENTINFO, 0) != -1) {
         cout << "File " << CLIENTINFO << " already exists!" << endl;
-        VERIFY(-1);
+        return -1;
     }
     comm.Connect();
 
@@ -200,10 +197,9 @@ int Client::WriteInfoToFile() {
     ofstream ClientInfoFile(CLIENTINFO);
     Base64Wrapper base64;
     
+    cout << "len of id" << strlen(ClientID) << endl;
     ClientInfoFile << ClientName << endl;
-    for (unsigned char c : ClientID) {
-        ClientInfoFile << int(c);
-    }
+    ClientInfoFile << hex_to_ascii(ClientID, UUID_SIZE);
     ClientInfoFile << endl;
     ClientInfoFile << base64.encode(rsa_private->getPrivateKey()) << endl;
     ClientInfoFile.close();
