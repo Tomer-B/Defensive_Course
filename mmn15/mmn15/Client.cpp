@@ -242,7 +242,6 @@ int Client::ReceiveMessageFromClient() {
     int MessageIndex = 0;
     int result = 0;
     int DecryptionResult = 0;
-    char asd = 'g';
 
     comm.Connect();
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
