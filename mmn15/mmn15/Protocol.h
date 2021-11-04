@@ -8,6 +8,7 @@
 
 #define UUID_SIZE (16)
 #define PUBLIC_KEY_SIZE (160)
+#define SYMMETRIC_KEY_SIZE (16)
 #define MAX_NAME_SIZE (255)
 #define MAX_PAYLOAD_SIZE (16384)
 
@@ -78,9 +79,9 @@ class RequestSendMessageToClient : Payload {
 	char ClientID[UUID_SIZE];
 	char MessageType;
 	size_t Size;
-	char* Content;
+	string Content;
 public:
-	RequestSendMessageToClient(char ClientID[UUID_SIZE], char MessageType, size_t Size, char* Content) : MessageType(MessageType), Size(Size), Content(Content) {
+	RequestSendMessageToClient(char ClientID[UUID_SIZE], char MessageType, size_t Size, string Content) : MessageType(MessageType), Size(Size), Content(Content) {
 		memset(ClientID, 0, sizeof(ClientID));
 		memcpy(ClientID, ClientID, sizeof(ClientID));
 	};

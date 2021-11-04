@@ -25,7 +25,7 @@ int getMyInfo(string& name, string& ClientID, string& PrivateKey) {
 
     if (clientInfo.is_open()) {
         getline(clientInfo, name);
-        getline(clientInfo, ClientID); // base-64 encoded
+        getline(clientInfo, ClientID);
         getline(clientInfo, PrivateKey); // base-64 encoded
     }
     return 0;

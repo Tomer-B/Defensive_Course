@@ -17,3 +17,4 @@ using namespace std;
 class ArgumentTooLongError : exception {};
 class ServerInfoReadError: exception {};
 class BadResponseCodeError : exception {};
+class NoSymmetricKeyError : exception {};

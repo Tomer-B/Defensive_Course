@@ -28,6 +28,9 @@ private:
 	int GetRemotePublicKey();
 	vector<char> SendMessageAndExpectCode(ProtocolMessage* p, size_t ExpectedPayloadSize, unsigned short ExpectedCode);
 	User* GetUserByName(char RequestedClientName[MAX_NAME_SIZE]);
+	User* GetUserByID(char id[UUID_SIZE]);
+	int SendMessageToClient(size_t MessageType, User* user);
+	int ReceiveMessageFromClient();
 public:
 	Client(const string& ip, const string& port);
 	int start();
