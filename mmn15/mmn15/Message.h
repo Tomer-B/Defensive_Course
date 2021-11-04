@@ -1,4 +1,5 @@
 #pragma once
+#pragma pack(push, 1)
 
 #include <iostream>
 #include <vector>
@@ -14,3 +15,5 @@ class Message {
 	friend class User;
 	friend class Client;
 };
+
+#pragma pack(pop)

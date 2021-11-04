@@ -115,13 +115,13 @@ int Client::GetRemotePublicKey() {
 
     if (!ClientsList.size()) {
         cout << "Unknwon Client, request ClientList (20)" << endl;
-        VERIFY(-1);
+        goto cleanup;
     }
     
     cout << "Input Requested Username: " << endl;
     cin >> RequestedClientName;
     user = GetUserByName(RequestedClientName);
-    VERIFY(user == NULL);
+    VERIFY(user != NULL);
 
     comm.Connect();
     r = new RequestClientPublicKey(user->ClientID);
@@ -163,7 +163,7 @@ User* Client::GetUserByName(char RequestedClientName[MAX_NAME_SIZE]) {
             return &user;
         }
     }
-    cout << "Could not find such User. Try Requesting the client list (20)" << endl;
+    cout << "Could not find User by name. Try Requesting the client list (20) " << RequestedClientName << endl;
     return NULL;
 }
 
@@ -173,7 +173,7 @@ User* Client::GetUserByID(char id[UUID_SIZE]) {
             return &user;
         }
     }
-    cout << "Could not find such User. Try Requesting the client list (20)" << endl;
+    cout << "Could not find such User by id. Try Requesting the client list (20) " << id << endl;
     return NULL;
 }
 
@@ -203,7 +203,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     case SEND_TEXT_MSG_TYPE:
         if (!user->SymmetricKeySet) {
             cout << "No Symmetric key for that client!" << endl;
-            throw NoSymmetricKeyError();
+            goto cleanup;
         }
         cout << "Input Message Content: " << endl;
         cin >> MessageContent;
@@ -245,6 +245,7 @@ int Client::ReceiveMessageFromClient() {
 
     comm.Connect();
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
+    cout << "Total length: " << p->PayloadSize << endl;
     PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, 2004);
     while (!finished_reading) {
         if (PayLoadResponse[MessageIndex] == '\0') {
@@ -252,11 +253,15 @@ int Client::ReceiveMessageFromClient() {
             finished_reading = true;
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
+            cout << "Checking src user" << endl;
             user = GetUserByID(CurrentMessage->ClientID);
             VERIFY(user != NULL);
             DecryptionResult = user->DecryptAndDisplayMessage(CurrentMessage);
             if (DecryptionResult == SEND_SYMMETRIC_KEY) {
-                SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, user);
+                if (comm.IsConnected()) {
+                    comm.Close();
+                }
+                SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, user);
             }
             MessageIndex += CurrentMessage->MessageSize;
         }

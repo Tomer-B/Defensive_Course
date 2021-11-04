@@ -31,7 +31,7 @@ int User::DecryptAndDisplayMessage(Message* message) {
 			cout << "Request for symmetric key" << endl;
 			return SEND_SYMMETRIC_KEY;
 		case SEND_SYMMETRIC_KEY_MSG_TYPE:
-			cout << "Symmetric key received" << endl;
+			cout << "Symmetric key received: " << message->MessageSize  << endl;
 			key.assign(message->Content, message->Content + message->MessageSize);
 			SetSymmetricKey(key);
 			break;

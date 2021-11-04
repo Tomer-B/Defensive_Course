@@ -48,9 +48,9 @@ class ProtocolMessage {
 	char ClientID[UUID_SIZE];
 	unsigned char Version;
 	unsigned short Code;
-	size_t PayloadSize;
 	Payload *payload;
 public:
+	size_t PayloadSize;
 	ProtocolMessage(char id[UUID_SIZE], unsigned char Version, unsigned short Code, unsigned int PayloadSize, Payload *payload) :
 		Version(Version), Code(Code), PayloadSize(PayloadSize), payload(payload) {
 		memset(ClientID, 0, UUID_SIZE);
@@ -70,8 +70,8 @@ class RequestClientPublicKey : Payload {
 	char ClientID[UUID_SIZE];
 public:
 	RequestClientPublicKey(char id[UUID_SIZE]) {
-		memset(ClientID, 0, sizeof(ClientID));
-		memcpy(ClientID, id, sizeof(ClientID));
+		memset(ClientID, 0, UUID_SIZE);
+		memcpy(ClientID, id, UUID_SIZE);
 	}
 };
 
@@ -81,9 +81,9 @@ class RequestSendMessageToClient : Payload {
 	size_t Size;
 	string Content;
 public:
-	RequestSendMessageToClient(char ClientID[UUID_SIZE], char MessageType, size_t Size, string Content) : MessageType(MessageType), Size(Size), Content(Content) {
-		memset(ClientID, 0, sizeof(ClientID));
-		memcpy(ClientID, ClientID, sizeof(ClientID));
+	RequestSendMessageToClient(char id[UUID_SIZE], char MessageType, size_t Size, string Content) : MessageType(MessageType), Size(Size), Content(Content) {
+		memset(ClientID, 0, UUID_SIZE);
+		memcpy(ClientID, id, UUID_SIZE);
 	};
 };
 
