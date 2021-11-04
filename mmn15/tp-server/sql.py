@@ -1,4 +1,5 @@
 import sqlite3
+import logging
 from objects import User, Message
 
 logger = logging.getLogger(__name__)
