@@ -15,10 +15,11 @@ private:
 	char ClientID[UUID_SIZE];
 	char ClientName[MAX_NAME_SIZE];
 	ClientComms comm;
-	RSAPrivateWrapper rsa_private;
-	RSAPublicWrapper rsa_public;
+	RSAPrivateWrapper *rsa_private;
+	RSAPublicWrapper *rsa_public;
 	vector<User> ClientsList;
 
+	int ReadInfoFile();
 	string readServerData(string path);
 	int initiateCommunication();
 	int registerClient();
@@ -33,6 +34,7 @@ private:
 	int ReceiveMessageFromClient();
 public:
 	Client(const string& ip, const string& port);
+	~Client();
 	int start();
 };
 #pragma pack(pop)

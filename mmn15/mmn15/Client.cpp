@@ -2,14 +2,69 @@
 #include "Comms.h"
 #include "Protocol.h"
 #include "Base64Wrapper.h"
+#include "file_utils.h"
 
 #include <io.h>
 #include <fstream>
 
 using namespace std;
 
-Client::Client(const string& ip, const string& port) : comm(ip, port), rsa_public(rsa_private.getPublicKey()) {}
-    //getMyInfo(); }
+Client::Client(const string& ip, const string& port) : comm(ip, port) {
+    rsa_private = NULL;
+    ReadInfoFile();
+    if (!rsa_private) {
+        rsa_private = new RSAPrivateWrapper();
+    }
+    rsa_public = new RSAPublicWrapper(rsa_private->getPublicKey());
+}
+
+Client::~Client() {
+    if (rsa_public) {
+        delete rsa_public;
+    }
+    if (rsa_private) {
+        delete rsa_private;
+    }
+}
+
+
+int Client::ReadInfoFile() {
+    std::ifstream InfoFile(CLIENTINFO);
+    std::vector<std::string> lines;
+
+    if (_access(CLIENTINFO, 0) == -1) {
+        cout << CLIENTINFO << " File does not exist, Must register to use UMessage!" << endl;
+        return 0;
+    }
+    if (!InfoFile.is_open()) {
+        throw InvalidMeInfoFileError();
+    }
+    for (std::string line; getline(InfoFile, line);) {
+        lines.push_back(line);
+    }
+    InfoFile.close();
+    if ((lines.size() < 3) || (lines[0].length() > MAX_NAME_SIZE)) {
+        throw InvalidMeInfoFileError();
+    }
+    cout << "good1" << endl;
+    strncpy_s(ClientName, (char*)&lines[0], MAX_NAME_SIZE);
+    cout << "good2" << endl;
+    lines[1] = ascii_to_hex(lines[1]);
+    cout << "good3" << endl;
+    if (lines[1].length() != UUID_SIZE) {
+        throw InvalidMeInfoFileError();
+    }
+    cout << "good4" << endl;
+    memcpy(ClientID, (char*)&lines[1][0], UUID_SIZE);
+    cout << "good5" << endl;
+
+    string EncodedPrivateKey;
+    for (auto line = lines.begin() + 2; line < lines.end(); line++) {
+        EncodedPrivateKey += *line + "\n";
+    }
+
+    rsa_private = new RSAPrivateWrapper(Base64Wrapper::decode(EncodedPrivateKey));
+}
 
 int Client::printPrompt() {
     cout << "MessageU client at your service." << endl;
@@ -59,9 +114,7 @@ int Client::registerClient() {
         VERIFY(-1);
     }
 
-    cout << "My Public Key: " << rsa_public.getPublicKey() << endl; // remove
-
-    r = new RegisterPayload(ClientName, rsa_public.getPublicKey());
+    r = new RegisterPayload(ClientName, rsa_public->getPublicKey());
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, REGISTER_REQUEST, sizeof(RegisterPayload), (Payload*)r);
     
     PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE, REGISTRATION_SUCCESS_RESPONSE);
@@ -152,7 +205,7 @@ int Client::WriteInfoToFile() {
         ClientInfoFile << int(c);
     }
     ClientInfoFile << endl;
-    ClientInfoFile << base64.encode(rsa_private.getPrivateKey()) << endl;
+    ClientInfoFile << base64.encode(rsa_private->getPrivateKey()) << endl;
     ClientInfoFile.close();
     return 0;
 }

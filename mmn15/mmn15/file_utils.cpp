@@ -30,3 +30,14 @@ int getMyInfo(string& name, string& ClientID, string& PrivateKey) {
     }
     return 0;
 }
+
+string ascii_to_hex(const string& Ascii) {
+    std::string result;
+    for (auto it = Ascii.begin(); it != Ascii.end(); advance(it, 2)) {
+        string Current;
+        Current += *it;
+        Current += *next(it);
+        result += static_cast<char>(stoi(Current, nullptr, UUID_SIZE));
+    }
+    return result;
+}
