@@ -144,7 +144,7 @@ class MessageUServer(object):
         unread_messages = []
         if client_id in self._messages:
             unread_messages = self._messages[client_id]
-        self._remove_user_messages()
+        self._remove_user_messages(client_id)
         logger.info(f'Unread messages to {client_id} removed')
         return unread_messages
 

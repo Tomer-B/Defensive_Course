@@ -53,8 +53,8 @@ class ProtocolMessage {
 public:
 	ProtocolMessage(char id[UUID_SIZE], unsigned char Version, unsigned short Code, unsigned int PayloadSize, Payload *payload) :
 		Version(Version), Code(Code), PayloadSize(PayloadSize), payload(payload) {
-		memset(ClientID, 0, sizeof(ClientID));
-		memcpy(ClientID, id, sizeof(id));
+		memset(ClientID, 0, UUID_SIZE);
+		memcpy(ClientID, id, UUID_SIZE);
 	};
 	virtual vector<char> pack();
 };

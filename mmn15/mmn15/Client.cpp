@@ -84,6 +84,7 @@ cleanup:
 }
 
 int Client::getClientList() {
+    cout << "Getting client list" << endl;
     comm.Connect();
     ProtocolMessage* p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, 0, NULL);
     vector<char> PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, CLIENT_LIST_RESPONSE);
@@ -241,20 +242,25 @@ int Client::ReceiveMessageFromClient() {
     int MessageIndex = 0;
     int result = 0;
     int DecryptionResult = 0;
+    char asd = 'g';
 
     comm.Connect();
-    p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUE ST, 0, NULL);
+    p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
     PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, 2004);
     while (!finished_reading) {
-        VERIFY(PayLoadResponse[MessageIndex] != '\0');
-        CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
-        user = GetUserByID(CurrentMessage->ClientID);
-        VERIFY(user != NULL);
-        DecryptionResult = user->DecryptAndDisplayMessage(CurrentMessage);
-        if (DecryptionResult == SEND_SYMMETRIC_KEY) {
-            SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, user);
+        if (PayLoadResponse[MessageIndex] == '\0') {
+            cout << "No more messages" << endl;
+            finished_reading = true;
+        } else {
+            CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
+            user = GetUserByID(CurrentMessage->ClientID);
+            VERIFY(user != NULL);
+            DecryptionResult = user->DecryptAndDisplayMessage(CurrentMessage);
+            if (DecryptionResult == SEND_SYMMETRIC_KEY) {
+                SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, user);
+            }
+            MessageIndex += CurrentMessage->MessageSize;
         }
-        MessageIndex += CurrentMessage->MessageSize;
     }
 
 cleanup:

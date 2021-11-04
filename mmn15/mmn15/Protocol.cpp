@@ -19,7 +19,7 @@ vector<char> ProtocolMessage::pack() {
 	}
 	*/
 	char* data = (char*)&ClientID;
-	for (int i = 0; i < sizeof(ClientID); i++) {
+	for (int i = 0; i < UUID_SIZE; i++) {
 		v.push_back(data[i]);
 	}
 	v.push_back(Version);

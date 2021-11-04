@@ -16,8 +16,8 @@ class SQLHandler(object):
     UPDATE_USER_LAST_SEEN = 'UPDATE users SET LastSeen = (?) where id = (?)'
 
     SELECT_ALL_MESSAGES_FROM_DB = "SELECT * FROM messages;"
-    INSERT_MESSAGE = "INSERT INTO message (ID, ToCLient, FromClient, Type, Content) VALUES (?, ?, ?, ?, ?)"
-    DELETE_MESSAGE_FROM_DB = "DELETE FROM message WHERE ToCLient=(?);"
+    INSERT_MESSAGE = "INSERT INTO messages (ID, ToCLient, FromClient, Type, Content) VALUES (?, ?, ?, ?, ?)"
+    DELETE_MESSAGE_FROM_DB = "DELETE FROM messages WHERE ToCLient=(?);"
 
 
     def __init__(self, db_path):

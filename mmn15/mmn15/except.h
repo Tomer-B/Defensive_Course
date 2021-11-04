@@ -7,7 +7,7 @@ using namespace std;
 
 #define VERIFY(exp)                                    \
 	do {                                               \
-		if (exp) {                                     \
+		if (!exp) {                                     \
 			cout << "Got Error: " << result << endl;   \
 			result = exp;                              \
 			goto cleanup;                              \
