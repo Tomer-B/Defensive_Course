@@ -78,6 +78,7 @@ int Client::printPrompt() {
 
 vector<char> Client::SendMessageAndExpectCode(ProtocolMessage *p, size_t ExpectedPayloadSize, unsigned short ExpectedCode) {
     vector<char> ServerResponse = { 0 };
+    vector<char>::iterator a;
     ServerResponseHeader* ServerResponseH;
     
     comm.SendMessage(p->pack());
@@ -88,8 +89,7 @@ vector<char> Client::SendMessageAndExpectCode(ProtocolMessage *p, size_t Expecte
         cout << "Got Bad Response: " << ServerResponseH->Code << endl;
         throw BadResponseCodeError();
     }
-
-    return vector<char>(ServerResponse.begin() + sizeof(ServerResponseHeader), ServerResponse.end());
+    return vector<char>(ServerResponse.begin() + sizeof(ServerResponseHeader), ServerResponse.begin() + sizeof(ServerResponseHeader) + ServerResponseH->PayloadSize);
 }
 
 int Client::registerClient() {
@@ -297,11 +297,14 @@ int Client::ReceiveMessageFromClient() {
     cout << "Total length: " << p->PayloadSize << endl;
     PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, 2004);
     while (!finished_reading) {
-        if (PayLoadResponse[MessageIndex] == '\0') {
+        if (MessageIndex >= PayLoadResponse.size()) {
             cout << "No more messages" << endl;
             finished_reading = true;
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
+            if (CurrentMessage->MessageSize != 0) {
+                CurrentMessage->Content = (char*)&PayLoadResponse[MessageIndex + 25];
+            }
             cout << "Checking src user" << endl;
             user = GetUserByID(CurrentMessage->ClientID);
             VERIFY(user != NULL);

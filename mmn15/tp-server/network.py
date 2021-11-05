@@ -85,7 +85,6 @@ def handle_send_message(request):
     message_type = request._payload[16:17]
     content_size = request._payload[17:21]
     content = request._payload[21:request._payload_len]
-    print(f'New message {content} : {content_size} : !{len(content)} : {request._payload_len}')
     message_id = request._server.send_message(request._client_id, dest_client_id, message_type, content_size, content)
     return SendMessageResponse(request._server.version, dest_client_id, message_id)
 
