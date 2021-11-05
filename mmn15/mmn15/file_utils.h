@@ -4,5 +4,5 @@
 using namespace std;
 
 string readServerData();
-int getMyInfo(string &name, string &ClientID, string &PrivateKey);
 string ascii_to_hex(const string& Ascii);
+string hex_to_ascii(const string& hex_str, size_t len);
