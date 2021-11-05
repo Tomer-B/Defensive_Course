@@ -10,7 +10,7 @@
 #define PUBLIC_KEY_SIZE (160)
 #define SYMMETRIC_KEY_SIZE (16)
 #define MAX_NAME_SIZE (255)
-#define MAX_PAYLOAD_SIZE (16384)
+#define MAX_PAYLOAD_SIZE (1024*1024)
 
 #define REGISTER_REQUEST (1000)
 #define CLIENT_LIST_REQUEST (1001)
@@ -85,6 +85,7 @@ public:
 		memset(ClientID, 0, UUID_SIZE);
 		memcpy(ClientID, id, UUID_SIZE);
 	};
+	friend class Client;
 };
 
 class RemoteClientResponse {

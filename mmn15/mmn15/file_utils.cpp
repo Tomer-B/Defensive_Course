@@ -30,7 +30,7 @@ string ascii_to_hex(const string& Ascii) {
     return result;
 }
 
-string hex_to_ascii(const string& Hex, size_t len) {
+string hex_to_ascii(const char* Hex, size_t len) {
     stringstream stream;
     for (int i = 0; i < len; i++) {
         stream << setw(2) << setfill('0') << hex << ((int)Hex[i] & 0xff);

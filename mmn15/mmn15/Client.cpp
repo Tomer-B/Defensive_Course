@@ -197,7 +197,7 @@ int Client::WriteInfoToFile() {
     ofstream ClientInfoFile(CLIENTINFO);
     Base64Wrapper base64;
     
-    cout << "len of id" << strlen(ClientID) << endl;
+    cout << "len of id " << strlen(ClientID) << endl;
     ClientInfoFile << ClientName << endl;
     ClientInfoFile << hex_to_ascii(ClientID, UUID_SIZE);
     ClientInfoFile << endl;
@@ -243,11 +243,11 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     switch (MessageType) {
     case GET_SYMMETRIC_KEY_MSG_TYPE:
         r = new RequestSendMessageToClient(user->ClientID, MessageType, 0, "");
-        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient), (Payload*)r);
+        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient)-sizeof(string)+r->Size, (Payload*)r);
         break;
     case SEND_SYMMETRIC_KEY_MSG_TYPE:
         r = new RequestSendMessageToClient(user->ClientID, MessageType, SYMMETRIC_KEY_SIZE, string((char*)user->aes.getKey()));
-        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient), (Payload*)r);
+        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
         break;
     case SEND_TEXT_MSG_TYPE:
         if (!user->SymmetricKeySet) {
@@ -257,7 +257,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         cout << "Input Message Content: " << endl;
         cin >> MessageContent;
         r = new RequestSendMessageToClient(user->ClientID, MessageType, MessageContent.size(), user->aes.encrypt(MessageContent.c_str(), MessageContent.size()));
-        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient), (Payload*)r);
+        p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
         break;
     //case SEND_FILE_MSG_TYPE:
     //    break;
@@ -312,7 +312,7 @@ int Client::ReceiveMessageFromClient() {
                 }
                 SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, user);
             }
-            MessageIndex += CurrentMessage->MessageSize;
+            MessageIndex += CurrentMessage->MessageSize + 25;
         }
     }
 

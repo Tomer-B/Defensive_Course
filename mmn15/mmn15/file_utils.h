@@ -5,4 +5,4 @@ using namespace std;
 
 string readServerData();
 string ascii_to_hex(const string& Ascii);
-string hex_to_ascii(const string& hex_str, size_t len);
+string hex_to_ascii(const char* Hex, size_t len);

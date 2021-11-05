@@ -2,8 +2,11 @@ import os
 import time
 import uuid
 import base64
+import logging
 
 BYTE_ORDER = 'little'
+
+logger = logging.getLogger(__name__)
 
 class Message(object):
     def __init__(self, message_id, to_client, from_client, message_type, content):
@@ -76,7 +79,9 @@ class RegisterUserResponse(ServerResponse):
         self.user_id = user_id
 
     def serialize_payload(self):
+        logger.info(f'Serializing RegisterUserResponse')
         assert type(self.user_id) is bytes and len(self.user_id) == 16
+        logger.info(f'\tMessage payload size: {len(self.user_id)}')
         return self.user_id
 
 
@@ -88,9 +93,11 @@ class UserListResponse(ServerResponse):
         self.users = users
 
     def serialize_payload(self):
+        logger.info(f'Serializing UserListResponse')
         users_data = b''
         for user in self.users:
             users_data += user.serialize()
+        logger.info(f'\tMessage payload size: {len(users_data)}')
         return users_data
 
 
@@ -103,8 +110,10 @@ class PubkeyResponse(ServerResponse):
         self.pubkey = pubkey
 
     def serialize_payload(self):
+        logger.info(f'Serializing PubkeyResponse')
         assert type(self.client_id) is bytes and len(self.client_id) == 16
         assert type(self.pubkey) is bytes and len(self.pubkey) == 160
+        logger.info(f'\tMessage payload size: {len(self.client_id+self.pubkey)}')
         return self.client_id+self.pubkey
 
 
@@ -117,8 +126,10 @@ class SendMessageResponse(ServerResponse):
         self.message_id = message_id
 
     def serialize_payload(self):
+        logger.info(f'Serializing SendMessageResponse')
         assert type(self.dest_client_id) is bytes and len(self.dest_client_id) == 16
         assert type(self.message_id) is bytes and len(self.message_id) == 4
+        logger.info(f'\tMessage payload size: {len(self.dest_client_id+self.message_id)}')
         return self.dest_client_id+self.message_id
 
 
@@ -130,7 +141,9 @@ class GetMessagesResponse(ServerResponse):
         self.messages = messages
 
     def serialize_payload(self):
+        logger.info(f'Serializing GetMessagesResponse')
         message_data = b''
         for message in self.messages:
             message_data += message.serialize()
+        logger.info(f'\tMessage payload size: {len(message_data)}')
         return message_data

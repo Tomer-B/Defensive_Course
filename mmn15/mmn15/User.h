@@ -1,5 +1,5 @@
 #pragma once
-
+#pragma pack(push, 1)
 #include "Protocol.h"
 #include "AESWrapper.h"
 #include "Message.h"
@@ -22,3 +22,5 @@ public:
 	int DecryptAndDisplayMessage(Message* message);
 	friend class Client;
 };
+
+#pragma pack(pop)

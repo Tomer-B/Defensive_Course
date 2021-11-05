@@ -85,6 +85,7 @@ def handle_send_message(request):
     message_type = request._payload[16:17]
     content_size = request._payload[17:21]
     content = request._payload[21:request._payload_len]
+    print(f'New message {content} : {content_size} : !{len(content)} : {request._payload_len}')
     message_id = request._server.send_message(request._client_id, dest_client_id, message_type, content_size, content)
     return SendMessageResponse(request._server.version, dest_client_id, message_id)
 
@@ -140,6 +141,7 @@ class ServerRequest(object):
             logger.info(f'Handling new request')
             assert len(message) == cls.REQUEST_HEADER_LEN
             client_id = message[0:cls.CLIENT_ID_LEN]
+            logger.info(f'\tClient ID: {client_id}')
             version, request_code, payload_len = struct.unpack(cls.REQUEST_STRUCT, message[cls.CLIENT_ID_LEN:cls.REQUEST_HEADER_LEN])
             cls.validate_request(client_id, version, request_code, payload_len, server_version)
         except Exception as e:
