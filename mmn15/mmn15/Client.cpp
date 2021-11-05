@@ -89,7 +89,7 @@ vector<char> Client::SendMessageAndExpectCode(ProtocolMessage *p, size_t Expecte
         throw BadResponseCodeError();
     }
 
-    return vector<char>(ServerResponse.begin() + sizeof(ServerResponseHeader), ServerResponse.end());
+    return vector<char>(ServerResponse.begin() + sizeof(ServerResponseHeader), ServerResponse.begin() + ServerResponseH->PayloadSize);
 }
 
 int Client::registerClient() {
@@ -196,8 +196,7 @@ cleanup:
 int Client::WriteInfoToFile() {
     ofstream ClientInfoFile(CLIENTINFO);
     Base64Wrapper base64;
-    
-    cout << "len of id " << strlen(ClientID) << endl;
+
     ClientInfoFile << ClientName << endl;
     ClientInfoFile << hex_to_ascii(ClientID, UUID_SIZE);
     ClientInfoFile << endl;
@@ -238,6 +237,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         cin >> RequestedClientName;
         user = GetUserByName(RequestedClientName);
     }
+    RSAPublicWrapper rsa(user->PublicKey);
 
     comm.Connect();
     switch (MessageType) {
@@ -246,6 +246,10 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient)-sizeof(string)+r->Size, (Payload*)r);
         break;
     case SEND_SYMMETRIC_KEY_MSG_TYPE:
+        if (!user->PublicKeySet) {
+            cout << "No Public key for that client!" << endl;
+            throw NoPublicKeyError();
+        }
         r = new RequestSendMessageToClient(user->ClientID, MessageType, SYMMETRIC_KEY_SIZE, string((char*)user->aes.getKey()));
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
         break;
@@ -295,9 +299,9 @@ int Client::ReceiveMessageFromClient() {
     comm.Connect();
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
     cout << "Total length: " << p->PayloadSize << endl;
-    PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, 2004);
+    PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, TEXT_MESSAGE_RECEIVED_RESPONSE);
     while (!finished_reading) {
-        if (PayLoadResponse[MessageIndex] == '\0') {
+        if (PayLoadResponse[MessageIndex] == '\0') { // add 1?
             cout << "No more messages" << endl;
             finished_reading = true;
         } else {
