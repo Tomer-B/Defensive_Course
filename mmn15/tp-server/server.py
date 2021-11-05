@@ -106,8 +106,8 @@ class MessageUServer(object):
     def _update_messages(self, message):
         if message.to_client not in self._messages:
             self._messages[message.to_client] = []
-        self._messages[message.to_client].append(new_message)
-        self._sql_handler.add_message_to_db(new_message)
+        self._messages[message.to_client].append(message)
+        self._sql_handler.add_message_to_db(message)
 
     def _remove_user_messages(self, client_id):
         self._messages[client_id] = []
@@ -145,7 +145,7 @@ class MessageUServer(object):
         if client_id in self._messages:
             unread_messages = self._messages[client_id]
         self._remove_user_messages(client_id)
-        logger.info(f'Unread messages to {client_id} removed')
+        logger.info(f'{len(unread_messages)} unread messages to {client_id} removed')
         return unread_messages
 
     def update_last_seen(self, client_id):
