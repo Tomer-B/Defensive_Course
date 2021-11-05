@@ -19,3 +19,4 @@ class ServerInfoReadError: exception {};
 class BadResponseCodeError : exception {};
 class NoSymmetricKeyError : exception {};
 class InvalidMeInfoFileError : exception {};
+class NoPublicKeyError : exception {};
