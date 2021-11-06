@@ -36,6 +36,13 @@ const unsigned char* AESWrapper::getKey() const
 	return _key; 
 }
 
+void AESWrapper::setKey(unsigned char* buffer, unsigned int length)
+{
+	if (length != DEFAULT_KEYLENGTH)
+		throw std::length_error("key length must be 16 bytes");
+	memcpy_s(_key, DEFAULT_KEYLENGTH, buffer, length);
+}
+
 std::string AESWrapper::encrypt(const char* plain, unsigned int length)
 {
 	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE] = { 0 };	// for practical use iv should never be a fixed value!

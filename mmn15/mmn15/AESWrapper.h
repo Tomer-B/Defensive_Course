@@ -17,6 +17,7 @@ public:
 	~AESWrapper();
 
 	const unsigned char* getKey() const;
+	void setKey(unsigned char* buffer, unsigned int length);
 
 	std::string encrypt(const char* plain, unsigned int length);
 	std::string decrypt(const char* cipher, unsigned int length);

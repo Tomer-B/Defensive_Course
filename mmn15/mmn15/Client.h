@@ -32,10 +32,13 @@ private:
 	User* GetUserByID(char id[UUID_SIZE]);
 	int SendMessageToClient(size_t MessageType, User* user);
 	int ReceiveMessageFromClient();
+	int DecryptAndDisplayMessage(Message* message, User* src_user);
 public:
 	Client(const string& ip, const string& port);
 	~Client();
 	int start();
+
+	friend class User;
 };
 #pragma pack(pop)
 

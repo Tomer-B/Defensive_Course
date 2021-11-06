@@ -17,15 +17,14 @@ int User::SetPublicKey(vector<char> key) {
 }
 
 int User::SetSymmetricKey(vector<char> key) {
-	memset(SymmetricKey, 0, sizeof(SymmetricKey));
-	memcpy(SymmetricKey, &key[0], sizeof(SymmetricKey));
+	aes.setKey((unsigned char *)&key[0], AESWrapper::DEFAULT_KEYLENGTH);
 	SymmetricKeySet = true;
 	return 0;
 }
-
+/*
 int User::DecryptAndDisplayMessage(Message* message) {
 	vector<char> key;
-	cout << "Message From: " << ClientName << endl; // Make sure the correct user is called
+	cout << "Message From: " << this->ClientName << endl; // Make sure the correct user is called
 	switch (message->MessageType) {
 		case GET_SYMMETRIC_KEY_MSG_TYPE:
 			cout << "Request for symmetric key" << endl;
@@ -35,14 +34,14 @@ int User::DecryptAndDisplayMessage(Message* message) {
 			for (int i = 0; i < message->MessageSize; i++) {
 				key.push_back(message->Content[i]);
 			}
-			SetSymmetricKey(key);
+			this->SetSymmetricKey(key);
 			break;
 		case SEND_TEXT_MSG_TYPE:
-			if (!SymmetricKeySet) {
+			if (!this->SymmetricKeySet) {
 				cout << "Can't decrypt message" << endl;
 				break;
 			}
-			cout << aes.decrypt(message->Content, message->MessageSize) << endl;
+			cout << this->aes.decrypt(message->Content, message->MessageSize) << endl;
 			break;
 			//case SEND_FILE_MSG_TYPE: 
 				//break;
@@ -54,3 +53,4 @@ int User::DecryptAndDisplayMessage(Message* message) {
 	cout << endl;
 	return 0;
 }
+*/

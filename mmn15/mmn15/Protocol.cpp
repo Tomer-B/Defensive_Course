@@ -5,8 +5,27 @@ using namespace std;
 
 vector<char> Payload::pack(size_t size) {
 	vector<char> v;
-	for (char* c = (char*)this; c < (char*)this + size;  c++) {
-		v.push_back(*c);
+	for (int i = 4; i < size+4; i++) {
+		v.push_back(((char*)this)[i]);
+	}
+	return v;
+}
+
+vector<char> RequestClientPublicKey::pack(size_t total_size) {
+	vector<char> v;
+	for (int i = 0; i < UUID_SIZE; i++) {
+		v.push_back(ClientID[i]);
+	}
+	return v;
+}
+
+vector<char> RequestSendMessageToClient::pack(size_t total_size) {
+	vector<char> v;
+	for (int i = 4; i < total_size + 4 - Size; i++) {
+		v.push_back(((char*)this)[i]);
+	}
+	for (int i = 0; i < Size; i++) {
+		v.push_back(Content[i]);
 	}
 	return v;
 }

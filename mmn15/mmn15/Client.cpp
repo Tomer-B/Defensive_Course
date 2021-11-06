@@ -78,7 +78,6 @@ int Client::printPrompt() {
 
 vector<char> Client::SendMessageAndExpectCode(ProtocolMessage *p, size_t ExpectedPayloadSize, unsigned short ExpectedCode) {
     vector<char> ServerResponse = { 0 };
-    vector<char>::iterator a;
     ServerResponseHeader* ServerResponseH;
     
     comm.SendMessage(p->pack());
@@ -177,7 +176,7 @@ int Client::GetRemotePublicKey() {
     r = new RequestClientPublicKey(user->ClientID);
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_PUBLIC_KEY_REQUEST, sizeof(RequestClientPublicKey), (Payload*)r);
     PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
-    user->SetPublicKey(PayLoadResponse);
+    user->SetPublicKey(vector<char>(PayLoadResponse.begin() + UUID_SIZE, PayLoadResponse.end()));
     cout << "Requested Public Key: " << user->PublicKey << endl;
 
 cleanup:
@@ -228,16 +227,21 @@ User* Client::GetUserByID(char id[UUID_SIZE]) {
 int Client::SendMessageToClient(size_t MessageType, User* user) {
     RequestSendMessageToClient* r = NULL;
     ProtocolMessage* p = NULL;
+    RSAPublicWrapper* rsa = NULL;
     vector<char> PayLoadResponse;
     string MessageContent;
     char RequestedClientName[MAX_NAME_SIZE];
+    
+    
+    string encrypted_key;
+    string encrypted_message;
+    char* symkey;
     
     if (!user) {
         cout << "Input Requested Username: " << endl;
         cin >> RequestedClientName;
         user = GetUserByName(RequestedClientName);
     }
-    RSAPublicWrapper rsa(user->PublicKey);
 
     comm.Connect();
     switch (MessageType) {
@@ -250,8 +254,18 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
             cout << "No Public key for that client!" << endl;
             throw NoPublicKeyError();
         }
-        r = new RequestSendMessageToClient(user->ClientID, MessageType, SYMMETRIC_KEY_SIZE, string((char*)user->aes.getKey()));
+
+        cout << "Before wrapper" << endl;
+        if (!user->SymmetricKeySet) {
+            user->SymmetricKeySet = true;
+        }
+        cout << "new sym key " << (char*)user->aes.getKey() << endl;
+        rsa = new RSAPublicWrapper(string(user->PublicKey, RSAPublicWrapper::KEYSIZE));
+        encrypted_key = rsa->encrypt((char*)user->aes.getKey(), SYMMETRIC_KEY_SIZE);
+
+        r = new RequestSendMessageToClient(user->ClientID, MessageType, encrypted_key.size(), encrypted_key);
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
+        cout << "after message" << endl;
         break;
     case SEND_TEXT_MSG_TYPE:
         if (!user->SymmetricKeySet) {
@@ -260,7 +274,8 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         }
         cout << "Input Message Content: " << endl;
         cin >> MessageContent;
-        r = new RequestSendMessageToClient(user->ClientID, MessageType, MessageContent.size(), user->aes.encrypt(MessageContent.c_str(), MessageContent.size()));
+        encrypted_message = user->aes.encrypt(MessageContent.c_str(), MessageContent.size());
+        r = new RequestSendMessageToClient(user->ClientID, MessageType, encrypted_message.size(), encrypted_message);
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
         break;
     //case SEND_FILE_MSG_TYPE:
@@ -279,9 +294,49 @@ cleanup:
     if (p) {
         delete p;
     }
+    if (rsa) {
+        delete rsa;
+    }
     if (comm.IsConnected()) {
         comm.Close();
     }
+    return 0;
+}
+
+int Client::DecryptAndDisplayMessage(Message* message, User* src_user) {
+    vector<char> key;
+    string decrypted_message;
+    string crypted_message;
+
+    cout << "Message From: " << src_user->ClientName << endl; // Make sure the correct user is called
+    switch (message->MessageType) {
+    case GET_SYMMETRIC_KEY_MSG_TYPE:
+        cout << "Request for symmetric key" << endl;
+        return SEND_SYMMETRIC_KEY;
+    case SEND_SYMMETRIC_KEY_MSG_TYPE:
+        cout << "Symmetric key received: " << message->MessageSize << endl;
+        for (int i = 0; i < message->MessageSize; i++) {
+            key.push_back(message->Content[i]);
+        }
+        crypted_message = string(key.begin(), key.end());
+        decrypted_message = rsa_private->decrypt(crypted_message);
+        src_user->SetSymmetricKey(vector<char>(decrypted_message.begin(), decrypted_message.end()));
+        break;
+    case SEND_TEXT_MSG_TYPE:
+        if (!src_user->SymmetricKeySet) {
+            cout << "Can't decrypt message" << endl;
+            break;
+        }
+        cout << src_user->aes.decrypt(message->Content, message->MessageSize) << endl;
+        break;
+        //case SEND_FILE_MSG_TYPE: 
+            //break;
+    default:
+        cout << "Message Type " << message->MessageType << " Unrecognized" << endl;
+        break;
+    }
+    cout << "-----<EOM>-----" << endl;
+    cout << endl;
     return 0;
 }
 
@@ -291,6 +346,7 @@ int Client::ReceiveMessageFromClient() {
     vector<char> PayLoadResponse;
     User* user;
     Message* CurrentMessage;
+    vector<char> MessageContent;
     bool finished_reading = false;
     int MessageIndex = 0;
     int result = 0;
@@ -301,18 +357,24 @@ int Client::ReceiveMessageFromClient() {
     cout << "Total length: " << p->PayloadSize << endl;
     PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, TEXT_MESSAGE_RECEIVED_RESPONSE);
     while (!finished_reading) {
+        MessageContent.clear();
         if (MessageIndex >= PayLoadResponse.size()) {
             cout << "No more messages" << endl;
             finished_reading = true;
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
+            cout << "Getting content" << endl;
+            for (int i = 0; i < CurrentMessage->MessageSize; i++) {
+                MessageContent.push_back(PayLoadResponse[MessageIndex + 25 + i]);
+            }
+            cout << "Done pushing" << endl;
             if (CurrentMessage->MessageSize != 0) {
-                CurrentMessage->Content = (char*)&PayLoadResponse[MessageIndex + 25];
+                CurrentMessage->Content = &MessageContent[0];
             }
             cout << "Checking src user" << endl;
             user = GetUserByID(CurrentMessage->ClientID);
             VERIFY(user != NULL);
-            DecryptionResult = user->DecryptAndDisplayMessage(CurrentMessage);
+            DecryptionResult = DecryptAndDisplayMessage(CurrentMessage, user);
             if (DecryptionResult == SEND_SYMMETRIC_KEY) {
                 if (comm.IsConnected()) {
                     comm.Close();

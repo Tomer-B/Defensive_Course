@@ -41,7 +41,7 @@ class ServerResponseHeader {
 
 class Payload {
 public:
-	vector<char> pack(size_t size);
+	virtual vector<char> pack(size_t size);
 };
 
 class ProtocolMessage {
@@ -53,6 +53,10 @@ public:
 	size_t PayloadSize;
 	ProtocolMessage(char id[UUID_SIZE], unsigned char Version, unsigned short Code, unsigned int PayloadSize, Payload *payload) :
 		Version(Version), Code(Code), PayloadSize(PayloadSize), payload(payload) {
+
+		if (this->PayloadSize != 0) {
+			this->PayloadSize = this->PayloadSize - 4;
+		}
 		memset(ClientID, 0, UUID_SIZE);
 		memcpy(ClientID, id, UUID_SIZE);
 	};
@@ -73,6 +77,7 @@ public:
 		memset(ClientID, 0, UUID_SIZE);
 		memcpy(ClientID, id, UUID_SIZE);
 	}
+	virtual vector<char> pack(size_t total_size);
 };
 
 class RequestSendMessageToClient : Payload {
@@ -85,6 +90,7 @@ public:
 		memset(ClientID, 0, UUID_SIZE);
 		memcpy(ClientID, id, UUID_SIZE);
 	};
+	virtual vector<char> pack(size_t total_size);
 	friend class Client;
 };
 
