@@ -106,6 +106,8 @@ int Client::registerClient() {
 
     cout << "Enter Your name" << endl;
     cin >> ClientName;
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     if (strlen(ClientName) > 255) {
         cout << "Client name too long." << endl;
         FAIL_AND_CLEAN(ClientNameTooLong);
@@ -188,6 +190,8 @@ int Client::GetRemotePublicKey() {
     
     cout << "Input Requested Username: " << endl;
     cin >> RequestedClientName;
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     try {
         user = GetUserByName(RequestedClientName);
     }
@@ -268,6 +272,8 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     if (!user) {
         cout << "Input Requested Username: " << endl;
         cin >> RequestedClientName;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         try {
             user = GetUserByName(RequestedClientName);
         }
@@ -303,14 +309,16 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
             cout << "No Symmetric key for that client!" << endl;
             FAIL_AND_CLEAN(NoSymmetricKey);
         }
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cout << "Input Message Content: " << endl;
-        cin >> MessageContent;
+        getline(cin, MessageContent);
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         encrypted_message = user->aes.encrypt(MessageContent.c_str(), MessageContent.size());
         r = new RequestSendMessageToClient(user->ClientID, MessageType, encrypted_message.size(), encrypted_message);
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
         break;
-    //case SEND_FILE_MSG_TYPE:
-    //    break;
     default:
         cout << "No such message" << endl;
         return -1;
@@ -445,6 +453,8 @@ int Client::start() {
         try {
             printPrompt();
             cin >> option;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             if (cin.fail()) {
                 throw NotAnIntegerError();
             }
