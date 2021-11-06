@@ -3,6 +3,7 @@
 #include "Protocol.h"
 #include "Base64Wrapper.h"
 #include "file_utils.h"
+#include "except.h"
 
 #include <io.h>
 #include <fstream>
@@ -11,7 +12,8 @@ using namespace std;
 
 Client::Client(const string& ip, const string& port) : comm(ip, port) {
     rsa_private = NULL;
-    ReadInfoFile();
+        ReadInfoFile();
+    
     if (!rsa_private) {
         rsa_private = new RSAPrivateWrapper();
     }
@@ -26,7 +28,6 @@ Client::~Client() {
         delete rsa_private;
     }
 }
-
 
 int Client::ReadInfoFile() {
     std::ifstream InfoFile(CLIENTINFO);
@@ -85,7 +86,7 @@ vector<char> Client::SendMessageAndExpectCode(ProtocolMessage *p, size_t Expecte
     ServerResponseH = (ServerResponseHeader*)&ServerResponse[0];
 
     if (ServerResponseH->Code != ExpectedCode) {
-        cout << "Got Bad Response: " << ServerResponseH->Code << endl;
+        cout << "Did not get expected code back from server: " << ExpectedCode << " and instead got: " << ServerResponseH->Code << endl;
         throw BadResponseCodeError();
     }
     return vector<char>(ServerResponse.begin() + sizeof(ServerResponseHeader), ServerResponse.begin() + sizeof(ServerResponseHeader) + ServerResponseH->PayloadSize);
@@ -99,7 +100,7 @@ int Client::registerClient() {
 
     if (_access(CLIENTINFO, 0) != -1) {
         cout << "File " << CLIENTINFO << " already exists!" << endl;
-        return -1;
+        FAIL_AND_CLEAN(ClientInfoDoesNotExist);
     }
     comm.Connect();
 
@@ -107,17 +108,22 @@ int Client::registerClient() {
     cin >> ClientName;
     if (strlen(ClientName) > 255) {
         cout << "Client name too long." << endl;
-        VERIFY(-1);
+        FAIL_AND_CLEAN(ClientNameTooLong);
     }
 
     r = new RegisterPayload(ClientName, rsa_public->getPublicKey());
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, REGISTER_REQUEST, sizeof(RegisterPayload), (Payload*)r);
-    
-    PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE, REGISTRATION_SUCCESS_RESPONSE);
-    memcpy(ClientID, &PayLoadResponse[0], UUID_SIZE);
+    try {
+        PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE, REGISTRATION_SUCCESS_RESPONSE);
+        memcpy(ClientID, &PayLoadResponse[0], UUID_SIZE);
 
-    cout << "Writing info to file" << endl;
-    WriteInfoToFile();
+        cout << "Writing info to file" << endl;
+        WriteInfoToFile();
+    }
+    catch (BadResponseCodeError) {
+        cout << "Failed to SendMessage" << endl;
+        FAIL_AND_CLEAN(BadResponseCode);
+    }
 
 cleanup:
     if (r) {
@@ -134,9 +140,19 @@ cleanup:
 
 int Client::getClientList() {
     cout << "Getting client list" << endl;
+    ProtocolMessage* p = NULL;
+    vector<char> PayLoadResponse;
     comm.Connect();
-    ProtocolMessage* p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, 0, NULL);
-    vector<char> PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, CLIENT_LIST_RESPONSE);
+    p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_LIST_REQUEST, 0, NULL);
+    int result = 0;
+    
+    try {
+        PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, CLIENT_LIST_RESPONSE);
+    }
+    catch (BadResponseCodeError) {
+        FAIL_AND_CLEAN(BadResponseCode);
+    }
+    
     RemoteClientResponse* c;
     
     cout << "Client Names:" << endl;
@@ -149,9 +165,12 @@ int Client::getClientList() {
     }     
 
 cleanup:
-    delete p;
+    if (p) {
+        delete p;
+    }
+    
     comm.Close();
-    return 0;
+    return result;
 }
 
 int Client::GetRemotePublicKey() {
@@ -169,13 +188,23 @@ int Client::GetRemotePublicKey() {
     
     cout << "Input Requested Username: " << endl;
     cin >> RequestedClientName;
-    user = GetUserByName(RequestedClientName);
-    VERIFY(user != NULL);
+    try {
+        user = GetUserByName(RequestedClientName);
+    }
+    catch (UserNotFoundError) {
+        FAIL_AND_CLEAN(UserNotFound);
+    }
 
     comm.Connect();
     r = new RequestClientPublicKey(user->ClientID);
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, CLIENT_PUBLIC_KEY_REQUEST, sizeof(RequestClientPublicKey), (Payload*)r);
-    PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
+    try {
+        PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + PUBLIC_KEY_SIZE, PUBLIC_KEY_RESPONSE);
+    }
+    catch (BadResponseCodeError) {
+        FAIL_AND_CLEAN(BadResponseCode);
+    }
+    
     user->SetPublicKey(vector<char>(PayLoadResponse.begin() + UUID_SIZE, PayLoadResponse.end()));
     cout << "Requested Public Key: " << user->PublicKey << endl;
 
@@ -211,7 +240,7 @@ User* Client::GetUserByName(char RequestedClientName[MAX_NAME_SIZE]) {
         }
     }
     cout << "Could not find User by name. Try Requesting the client list (20) " << RequestedClientName << endl;
-    return NULL;
+    throw UserNotFoundError();
 }
 
 User* Client::GetUserByID(char id[UUID_SIZE]) {
@@ -221,7 +250,7 @@ User* Client::GetUserByID(char id[UUID_SIZE]) {
         }
     }
     cout << "Could not find such User by id. Try Requesting the client list (20) " << id << endl;
-    return NULL;
+    throw UserNotFoundError();
 }
 
 int Client::SendMessageToClient(size_t MessageType, User* user) {
@@ -231,16 +260,21 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     vector<char> PayLoadResponse;
     string MessageContent;
     char RequestedClientName[MAX_NAME_SIZE];
+    int result = 0;
     
     
     string encrypted_key;
     string encrypted_message;
-    char* symkey;
     
     if (!user) {
         cout << "Input Requested Username: " << endl;
         cin >> RequestedClientName;
-        user = GetUserByName(RequestedClientName);
+        try {
+            user = GetUserByName(RequestedClientName);
+        }
+        catch (UserNotFoundError) {
+            FAIL_AND_CLEAN(UserNotFound);
+        }
     }
 
     comm.Connect();
@@ -252,7 +286,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     case SEND_SYMMETRIC_KEY_MSG_TYPE:
         if (!user->PublicKeySet) {
             cout << "No Public key for that client!" << endl;
-            throw NoPublicKeyError();
+            FAIL_AND_CLEAN(NoPublicKey);
         }
 
         cout << "Before wrapper" << endl;
@@ -270,7 +304,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     case SEND_TEXT_MSG_TYPE:
         if (!user->SymmetricKeySet) {
             cout << "No Symmetric key for that client!" << endl;
-            goto cleanup;
+            FAIL_AND_CLEAN(NoSymmetricKey);
         }
         cout << "Input Message Content: " << endl;
         cin >> MessageContent;
@@ -285,7 +319,13 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         return -1;
         break;
     }
-    PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + sizeof(size_t), TEXT_MESSAGE_SENT_RESPONSE);
+    try {
+        PayLoadResponse = SendMessageAndExpectCode(p, UUID_SIZE + sizeof(size_t), TEXT_MESSAGE_SENT_RESPONSE);
+    }
+    catch (BadResponseCodeError) {
+        FAIL_AND_CLEAN(BadResponseCode);
+    }
+    
     // cout << "Sent message ID: " << 
 cleanup:
     if (r) {
@@ -300,7 +340,7 @@ cleanup:
     if (comm.IsConnected()) {
         comm.Close();
     }
-    return 0;
+    return result;
 }
 
 int Client::DecryptAndDisplayMessage(Message* message, User* src_user) {
@@ -355,11 +395,18 @@ int Client::ReceiveMessageFromClient() {
     comm.Connect();
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
     cout << "Total length: " << p->PayloadSize << endl;
-    PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, TEXT_MESSAGE_RECEIVED_RESPONSE);
+    try {
+        PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, TEXT_MESSAGE_RECEIVED_RESPONSE);
+    }
+    catch (BadResponseCodeError) {
+        FAIL_AND_CLEAN(BadResponseCode);
+    }
+
     while (!finished_reading) {
         MessageContent.clear();
         if (MessageIndex >= PayLoadResponse.size()) {
             cout << "No more messages" << endl;
+            cout << endl;
             finished_reading = true;
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
@@ -367,13 +414,16 @@ int Client::ReceiveMessageFromClient() {
             for (int i = 0; i < CurrentMessage->MessageSize; i++) {
                 MessageContent.push_back(PayLoadResponse[MessageIndex + 25 + i]);
             }
-            cout << "Done pushing" << endl;
             if (CurrentMessage->MessageSize != 0) {
                 CurrentMessage->Content = &MessageContent[0];
             }
-            cout << "Checking src user" << endl;
-            user = GetUserByID(CurrentMessage->ClientID);
-            VERIFY(user != NULL);
+            try {
+                user = GetUserByID(CurrentMessage->ClientID);
+            }
+            catch (UserNotFoundError) {
+                FAIL_AND_CLEAN(UserNotFound);
+            }
+            
             DecryptionResult = DecryptAndDisplayMessage(CurrentMessage, user);
             if (DecryptionResult == SEND_SYMMETRIC_KEY) {
                 if (comm.IsConnected()) {
@@ -396,34 +446,36 @@ cleanup:
 }
 
 int Client::start() {
-    int option;
+    int option = 0;
     while (1) {
         try {
             printPrompt();
             cin >> option;
+            if (cin.fail()) {
+                throw NotAnIntegerError();
+            }
+            cout << "ll" << endl;
             switch (option) {
             case 10:
-                registerClient();
+                cout << "Got back respnse " << registerClient() << endl;
                 break;
             case 20:
-                getClientList();
+                cout << "Got back respnse " << getClientList() << endl;
                 break;
             case 30:
-                GetRemotePublicKey();
+                cout << "Got back respnse " << GetRemotePublicKey() << endl;
                 break;
             case 40:
-                ReceiveMessageFromClient();
+                cout << "Got back respnse " << ReceiveMessageFromClient() << endl;
                 break;
             case 50:
-                SendMessageToClient(SEND_TEXT_MSG_TYPE, NULL);
+                cout << "Got back respnse " << SendMessageToClient(SEND_TEXT_MSG_TYPE, NULL) << endl;
                 break;
             case 51:
-                SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, NULL);
+                cout << "Got back respnse " << SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, NULL) << endl;
                 break;
             case 52:
-                SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, NULL);
-                break;
-            case 53:
+                cout << "Got back respnse " << SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, NULL) << endl;
                 break;
             case 0:
                 return 0;
@@ -432,8 +484,10 @@ int Client::start() {
                 break;
             }
         }
-        catch (const std::exception& error) {
-            std::cerr << error.what() << std::endl;
+        catch (...) {
+            cout << "Got Exception!" << endl;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
     }
 }

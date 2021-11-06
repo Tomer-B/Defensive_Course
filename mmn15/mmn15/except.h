@@ -5,18 +5,26 @@
 
 using namespace std;
 
-#define VERIFY(exp)                                    \
-	do {                                               \
-		if (!exp) {                                     \
-			cout << "Got Error: " << result << endl;   \
-			result = exp;                              \
-			goto cleanup;                              \
-		}                                              \
+#define FAIL_AND_CLEAN(ErrorCode)                          \
+	do {                                           \
+		result = ErrorCode;                        \
+		goto cleanup;                              \
 	} while (0)
 
+class NotAnIntegerError : exception {};
 class ArgumentTooLongError : exception {};
 class ServerInfoReadError: exception {};
 class BadResponseCodeError : exception {};
-class NoSymmetricKeyError : exception {};
 class InvalidMeInfoFileError : exception {};
-class NoPublicKeyError : exception {};
+class UserNotFoundError : exception {};
+
+#define NotAnInteger (1)
+#define ArgumentTooLong (2)
+#define ServerInfoRead (3)
+#define BadResponseCode (4)
+#define NoSymmetricKey (5)
+#define InvalidMeInfoFile (6)
+#define NoPublicKey (7)
+#define ClientNameTooLong (8)
+#define ClientInfoDoesNotExist (9)
+#define UserNotFound (10)

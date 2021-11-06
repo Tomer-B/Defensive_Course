@@ -21,36 +21,3 @@ int User::SetSymmetricKey(vector<char> key) {
 	SymmetricKeySet = true;
 	return 0;
 }
-/*
-int User::DecryptAndDisplayMessage(Message* message) {
-	vector<char> key;
-	cout << "Message From: " << this->ClientName << endl; // Make sure the correct user is called
-	switch (message->MessageType) {
-		case GET_SYMMETRIC_KEY_MSG_TYPE:
-			cout << "Request for symmetric key" << endl;
-			return SEND_SYMMETRIC_KEY;
-		case SEND_SYMMETRIC_KEY_MSG_TYPE:
-			cout << "Symmetric key received: " << message->MessageSize  << endl;
-			for (int i = 0; i < message->MessageSize; i++) {
-				key.push_back(message->Content[i]);
-			}
-			this->SetSymmetricKey(key);
-			break;
-		case SEND_TEXT_MSG_TYPE:
-			if (!this->SymmetricKeySet) {
-				cout << "Can't decrypt message" << endl;
-				break;
-			}
-			cout << this->aes.decrypt(message->Content, message->MessageSize) << endl;
-			break;
-			//case SEND_FILE_MSG_TYPE: 
-				//break;
-		default:
-			cout << "Message Type " << message->MessageType << " Unrecognized" << endl;
-			break;
-	}
-	cout << "-----<EOM>-----" << endl;
-	cout << endl;
-	return 0;
-}
-*/
