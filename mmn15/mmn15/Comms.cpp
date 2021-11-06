@@ -29,7 +29,6 @@ vector<char> ClientComms::ReceiveMessage(size_t MessageSize) {
 	catch (const std::exception& error) {
 		std::cerr << error.what() << std::endl;
 	}
-	std::cout << "Got " << read_bytes << " Bytes! " << " And buffer is of size " << buffer.size() << std::endl;
 	return buffer;
 }
 

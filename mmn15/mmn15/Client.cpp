@@ -206,7 +206,6 @@ int Client::GetRemotePublicKey() {
     }
     
     user->SetPublicKey(vector<char>(PayLoadResponse.begin() + UUID_SIZE, PayLoadResponse.end()));
-    cout << "Requested Public Key: " << user->PublicKey << endl;
 
 cleanup:
     if (r) {
@@ -245,11 +244,11 @@ User* Client::GetUserByName(char RequestedClientName[MAX_NAME_SIZE]) {
 
 User* Client::GetUserByID(char id[UUID_SIZE]) {
     for (User& user : ClientsList) {
-        if (strncmp(user.ClientID, id, MAX_NAME_SIZE) == 0) {
+        if (strncmp(user.ClientID, id, UUID_SIZE) == 0) {
             return &user;
         }
     }
-    cout << "Could not find such User by id. Try Requesting the client list (20) " << id << endl;
+    cout << "Could not find such User by id. Try Requesting the client list (20) " << endl;
     throw UserNotFoundError();
 }
 
@@ -289,11 +288,9 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
             FAIL_AND_CLEAN(NoPublicKey);
         }
 
-        cout << "Before wrapper" << endl;
         if (!user->SymmetricKeySet) {
             user->SymmetricKeySet = true;
         }
-        cout << "new sym key " << (char*)user->aes.getKey() << endl;
         rsa = new RSAPublicWrapper(string(user->PublicKey, RSAPublicWrapper::KEYSIZE));
         encrypted_key = rsa->encrypt((char*)user->aes.getKey(), SYMMETRIC_KEY_SIZE);
 
@@ -326,7 +323,6 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
         FAIL_AND_CLEAN(BadResponseCode);
     }
     
-    // cout << "Sent message ID: " << 
 cleanup:
     if (r) {
         delete r;
@@ -394,7 +390,6 @@ int Client::ReceiveMessageFromClient() {
 
     comm.Connect();
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, GET_MESSAGES_REQUEST, 0, NULL);
-    cout << "Total length: " << p->PayloadSize << endl;
     try {
         PayLoadResponse = SendMessageAndExpectCode(p, MAX_PAYLOAD_SIZE, TEXT_MESSAGE_RECEIVED_RESPONSE);
     }
@@ -410,7 +405,6 @@ int Client::ReceiveMessageFromClient() {
             finished_reading = true;
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
-            cout << "Getting content" << endl;
             for (int i = 0; i < CurrentMessage->MessageSize; i++) {
                 MessageContent.push_back(PayLoadResponse[MessageIndex + 25 + i]);
             }
@@ -454,7 +448,6 @@ int Client::start() {
             if (cin.fail()) {
                 throw NotAnIntegerError();
             }
-            cout << "ll" << endl;
             switch (option) {
             case 10:
                 cout << "Got back respnse " << registerClient() << endl;
