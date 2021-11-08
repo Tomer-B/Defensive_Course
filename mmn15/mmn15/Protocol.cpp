@@ -32,11 +32,6 @@ vector<char> RequestSendMessageToClient::pack(size_t total_size) {
 
 vector<char> ProtocolMessage::pack() {
 	vector<char> v;	
-	/*
-	for (char* c = (char*)this + 4; c < (char*)this + sizeof(ProtocolMessage); c++) {
-		v.push_back(*c);
-	}
-	*/
 	char* data = (char*)&ClientID;
 	for (int i = 0; i < UUID_SIZE; i++) {
 		v.push_back(data[i]);

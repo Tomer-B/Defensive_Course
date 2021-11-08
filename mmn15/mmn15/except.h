@@ -5,18 +5,18 @@
 
 using namespace std;
 
-#define FAIL_AND_CLEAN(ErrorCode)                          \
+#define FAIL_AND_CLEAN(ErrorCode)                  \
 	do {                                           \
 		result = ErrorCode;                        \
 		goto cleanup;                              \
 	} while (0)
 
-class NotAnIntegerError : exception {};
-class ArgumentTooLongError : exception {};
-class ServerInfoReadError: exception {};
-class BadResponseCodeError : exception {};
-class InvalidMeInfoFileError : exception {};
-class UserNotFoundError : exception {};
+class NotAnIntegerError : public exception {};
+class ArgumentTooLongError : public exception {};
+class ServerInfoReadError: public exception {};
+class BadResponseCodeError : public exception {};
+class InvalidMeInfoFileError : public exception {};
+class UserNotFoundError : public exception {};
 
 #define NotAnInteger (1)
 #define ArgumentTooLong (2)

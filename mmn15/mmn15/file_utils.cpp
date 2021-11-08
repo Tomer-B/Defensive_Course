@@ -14,7 +14,7 @@ string readServerData() {
     serverInfo.open(SERVERINFO);
 
     if (serverInfo.is_open()) {
-        return string((std::istreambuf_iterator<char>(serverInfo)), std::istreambuf_iterator<char>());
+        return string((istreambuf_iterator<char>(serverInfo)), istreambuf_iterator<char>());
     }
     throw ServerInfoReadError();
 }

@@ -26,8 +26,9 @@ vector<char> ClientComms::ReceiveMessage(size_t MessageSize) {
 	try {
 		read_bytes = read(sock, boost::asio::buffer(buffer));
 	}
-	catch (const std::exception& error) {
-		std::cerr << error.what() << std::endl;
+	// This is okay since the server Disconnects after Request is finished
+	catch (const exception& error) { 
+		cerr << error.what() << endl;
 	}
 	return buffer;
 }

@@ -30,8 +30,8 @@ Client::~Client() {
 }
 
 int Client::ReadInfoFile() {
-    std::ifstream InfoFile(CLIENTINFO);
-    std::vector<std::string> lines;
+    ifstream InfoFile(CLIENTINFO);
+    vector<std::string> lines;
 
     if (_access(CLIENTINFO, 0) == -1) {
         cout << CLIENTINFO << " File does not exist, Must register to use UMessage!" << endl;
@@ -40,7 +40,7 @@ int Client::ReadInfoFile() {
     if (!InfoFile.is_open()) {
         throw InvalidMeInfoFileError();
     }
-    for (std::string line; getline(InfoFile, line);) {
+    for (string line; getline(InfoFile, line);) {
         lines.push_back(line);
     }
     InfoFile.close();
@@ -97,6 +97,7 @@ int Client::registerClient() {
     RegisterPayload* r = NULL;
     ProtocolMessage* p = NULL;
     vector<char> PayLoadResponse = { 0 };
+    string name;
 
     if (_access(CLIENTINFO, 0) != -1) {
         cout << "File " << CLIENTINFO << " already exists!" << endl;
@@ -105,14 +106,13 @@ int Client::registerClient() {
     comm.Connect();
 
     cout << "Enter Your name" << endl;
-    cin >> ClientName;
-    cin.clear();
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    if (strlen(ClientName) > 255) {
+    getline(cin >> ws, name);
+    if (name.length() > 255) {
         cout << "Client name too long." << endl;
         FAIL_AND_CLEAN(ClientNameTooLong);
     }
-
+    strncpy_s(ClientName, name.c_str(), MAX_NAME_SIZE);
+    
     r = new RegisterPayload(ClientName, rsa_public->getPublicKey());
     p = new ProtocolMessage(ClientID, CLIENT_VERSION, REGISTER_REQUEST, sizeof(RegisterPayload), (Payload*)r);
     try {
@@ -182,6 +182,7 @@ int Client::GetRemotePublicKey() {
     ProtocolMessage* p = NULL;
     User* user = NULL;
     vector<char> PayLoadResponse;
+    string name;
 
     if (!ClientsList.size()) {
         cout << "Unknwon Client, request ClientList (20)" << endl;
@@ -189,9 +190,8 @@ int Client::GetRemotePublicKey() {
     }
     
     cout << "Input Requested Username: " << endl;
-    cin >> RequestedClientName;
-    cin.clear();
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin >> ws, name);
+    strncpy_s(RequestedClientName, name.c_str(), MAX_NAME_SIZE);
     try {
         user = GetUserByName(RequestedClientName);
     }
@@ -242,7 +242,7 @@ User* Client::GetUserByName(char RequestedClientName[MAX_NAME_SIZE]) {
             return &user;
         }
     }
-    cout << "Could not find User by name. Try Requesting the client list (20) " << RequestedClientName << endl;
+    cout << "Could not find User "<< RequestedClientName << " by name. Try Requesting the client list (20) " << endl;
     throw UserNotFoundError();
 }
 
@@ -264,6 +264,7 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     string MessageContent;
     char RequestedClientName[MAX_NAME_SIZE];
     int result = 0;
+    string name;
     
     
     string encrypted_key;
@@ -271,9 +272,8 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
     
     if (!user) {
         cout << "Input Requested Username: " << endl;
-        cin >> RequestedClientName;
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(cin >> ws, name);
+        strncpy_s(RequestedClientName, name.c_str(), MAX_NAME_SIZE);
         try {
             user = GetUserByName(RequestedClientName);
         }
@@ -309,12 +309,8 @@ int Client::SendMessageToClient(size_t MessageType, User* user) {
             cout << "No Symmetric key for that client!" << endl;
             FAIL_AND_CLEAN(NoSymmetricKey);
         }
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cout << "Input Message Content: " << endl;
-        getline(cin, MessageContent);
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(cin >> ws, MessageContent);
         encrypted_message = user->aes.encrypt(MessageContent.c_str(), MessageContent.size());
         r = new RequestSendMessageToClient(user->ClientID, MessageType, encrypted_message.size(), encrypted_message);
         p = new ProtocolMessage(ClientID, CLIENT_VERSION, SEND_MESSAGE_REQUEST, sizeof(RequestSendMessageToClient) - sizeof(string) + r->Size, (Payload*)r);
@@ -373,8 +369,6 @@ int Client::DecryptAndDisplayMessage(Message* message, User* src_user) {
         }
         cout << src_user->aes.decrypt(message->Content, message->MessageSize) << endl;
         break;
-        //case SEND_FILE_MSG_TYPE: 
-            //break;
     default:
         cout << "Message Type " << message->MessageType << " Unrecognized" << endl;
         break;
@@ -414,7 +408,7 @@ int Client::ReceiveMessageFromClient() {
         } else {
             CurrentMessage = (Message*)&PayLoadResponse[MessageIndex];
             for (int i = 0; i < CurrentMessage->MessageSize; i++) {
-                MessageContent.push_back(PayLoadResponse[MessageIndex + 25 + i]);
+                MessageContent.push_back(PayLoadResponse[MessageIndex + MESSAGE_HEADER_SIZE + i]);
             }
             if (CurrentMessage->MessageSize != 0) {
                 CurrentMessage->Content = &MessageContent[0];
@@ -433,7 +427,7 @@ int Client::ReceiveMessageFromClient() {
                 }
                 SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, user);
             }
-            MessageIndex += CurrentMessage->MessageSize + 25;
+            MessageIndex += CurrentMessage->MessageSize + MESSAGE_HEADER_SIZE;
         }
     }
 
@@ -449,36 +443,36 @@ cleanup:
 
 int Client::start() {
     int option = 0;
+    int result = 0;
     while (1) {
-        try {
+        result = 0;
+        //try {
             printPrompt();
             cin >> option;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             if (cin.fail()) {
                 throw NotAnIntegerError();
             }
             switch (option) {
             case 10:
-                cout << "Got back respnse " << registerClient() << endl;
+                result = registerClient();
                 break;
             case 20:
-                cout << "Got back respnse " << getClientList() << endl;
+                result = getClientList();
                 break;
             case 30:
-                cout << "Got back respnse " << GetRemotePublicKey() << endl;
+                result = GetRemotePublicKey();
                 break;
             case 40:
-                cout << "Got back respnse " << ReceiveMessageFromClient() << endl;
+                result = ReceiveMessageFromClient();
                 break;
             case 50:
-                cout << "Got back respnse " << SendMessageToClient(SEND_TEXT_MSG_TYPE, NULL) << endl;
+                result = SendMessageToClient(SEND_TEXT_MSG_TYPE, NULL);
                 break;
             case 51:
-                cout << "Got back respnse " << SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, NULL) << endl;
+                result = SendMessageToClient(GET_SYMMETRIC_KEY_MSG_TYPE, NULL);
                 break;
             case 52:
-                cout << "Got back respnse " << SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, NULL) << endl;
+                result = SendMessageToClient(SEND_SYMMETRIC_KEY_MSG_TYPE, NULL);
                 break;
             case 0:
                 return 0;
@@ -486,11 +480,12 @@ int Client::start() {
                 cout << "Bad command" << endl;
                 break;
             }
-        }
-        catch (...) {
+            cout << "Function return value is " << result << endl; // 0 means everything was okay.
+        /* }
+        catch (const exception& error) {
             cout << "Got Exception!" << endl;
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        }
+        }*/
     }
 }
